@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NeuralScan — AI Code Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    <div class="logo-name">Neural<span>Scan</span></div>
+    <span class="logo-ver">v3.0</span>
+  </div>
+  <div class="header-selects">
+    <div class="sel-group">
+      <label for="langSelect">Language</label>
+      <select class="hdr-sel" id="langSelect" onchange="onLangChange()">
+        <optgroup label="Web">
+          <option value="javascript">JavaScript</option>
+          <option value="typescript">TypeScript</option>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="php">PHP</option>
+        </optgroup>
+        <optgroup label="Backend">
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="csharp">C# (.NET)</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="ruby">Ruby</option>
+          <option value="kotlin">Kotlin</option>
+          <option value="swift">Swift</option>
+        </optgroup>
+        <optgroup label="Systems">
+          <option value="c">C</option>
+          <option value="cpp">C++</option>
+        </optgroup>
+        <optgroup label="Data &amp; Query">
+          <option value="sql">SQL</option>
+          <option value="r">R</option>
+          <option value="scala">Scala</option>
+        </optgroup>
+        <optgroup label="Shell &amp; Config">
+          <option value="bash">Bash / Shell</option>
+          <option value="powershell">PowerShell</option>
+          <option value="yaml">YAML</option>
+          <option value="json">JSON</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="sel-group">
+      <label for="modeSelect">Analysis Mode</label>
+      <select class="hdr-sel" id="modeSelect" onchange="onModeChange()">
+        <option value="full">🔬 Full Analysis</option>
+        <option value="intent">🎯 Intent Analyzer</option>
+        <option value="simulate">⚡ Execution Simulator</option>
+        <option value="autodebug">🛠 Auto Debug</option>
+        <option value="coach">🧑‍🏫 Developer Coach</option>
+        <option value="compare">🔄 Version Compare</option>
+        <option value="dna">🧬 Code DNA</option>
+        <option value="timetravel">⏳ Time Travel</option>
+        <option value="adversarial">⚔️ Adversarial Test</option>
+        <optgroup label="★ New Modes">
+          <option value="story">📖 Code Story</option>
+          <option value="teamcompare">👥 Team Compare</option>
+          <option value="translate">🌍 Code Translator</option>
+          <option value="complexity">📊 Complexity Map</option>
+          <option value="interview">🎓 Interview Prep</option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="openHistoryPanel()" title="Analysis History">🕐 History</button>
+    <button class="btn btn-outline btn-sm" onclick="openDashboard()" title="Dashboard">📊 Dashboard</button>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      Groq Connected
+    </div>
+  </div>
+</header>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- EDITOR PANE -->
+  <div class="editor-pane">
+    <div class="pane-bar">
+      <div class="pane-title"><div class="pane-dot"></div><span id="editorLabel">Code Editor — main.js</span></div>
+      <div class="bar-actions">
+        <button class="btn btn-outline btn-sm" onclick="loadSample()">Sample</button>
+        <button class="btn btn-outline btn-sm" onclick="clearAll()">Clear</button>
+        <button class="btn btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+          <div class="btn-spin" id="btnSpin"></div>
+          <span id="btnTxt">⚡ Analyze</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- File upload -->
+    <div class="upload-zone" id="dropZone"
+         onclick="document.getElementById('fileInput').click()"
+         ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <input type="file" id="fileInput"
+        accept=".js,.ts,.jsx,.tsx,.py,.java,.cs,.go,.rs,.rb,.kt,.swift,.php,.html,.htm,.css,.sql,.c,.cpp,.h,.hpp,.r,.scala,.sh,.bash,.ps1,.yaml,.yml,.json,.txt"
+        onchange="onFileSelect(event)"/>
+      <div class="uz-icon">📂</div>
+      <div class="uz-label"><strong>Click to upload</strong> or drag &amp; drop a code file</div>
+      <div class="uz-hint">JS · TS · PY · JAVA · C · C++ · C# · GO · RS · PHP · SQL · SWIFT · KT · SH · and more</div>
+      <div id="fileBadge"></div>
+    </div>
+
+    <!-- Main editor -->
+    <div class="code-wrap">
+      <textarea class="code-area" id="codeInput" spellcheck="false"
+        placeholder="// Paste code here, or upload a file above…
+// Ctrl+Enter to analyze
+
+function example(data) {
+  for (var i = 0; i &lt;= data.length; i++) {   // Bug: off-by-one
+    console.log(data[i].value * 2);
+  }
+}"></textarea>
+    </div>
+
+    <!-- V2 for compare -->
+    <div class="v2-wrap" id="teamWrap" style="display:none;flex-direction:column">
+      <div class="v2-label">▼ Team Compare — Developer 1 code is above. Add more below.</div>
+      <div id="teamExtraSlots"></div>
+      <div style="padding:8px 14px">
+        <button class="btn btn-outline btn-sm" onclick="addTeamMember()">+ Add Developer</button>
+      </div>
+    </div>
+    <div class="v2-wrap" id="v2Wrap">
+      <div class="v2-label">▼ Version 2 — Updated Code</div>
+      <textarea class="code-area" id="codeInput2" spellcheck="false"
+        placeholder="// Paste the new version here for comparison…"></textarea>
+    </div>
+
+    <!-- Extra mode bars -->
+    <div class="extra-bar" id="intentBar">
+      <label>Expected Behavior</label>
+      <input class="extra-input" id="intentInput" type="text"
+        placeholder="e.g. 'Returns sum of all positive numbers in the array'"/>
+    </div>
+    <div class="extra-bar" id="coachBar">
+      <label>Skill Level</label>
+      <div class="level-grp">
+        <button class="lvl-btn active" onclick="setLevel('beginner',this)">Beginner</button>
+        <button class="lvl-btn" onclick="setLevel('intermediate',this)">Intermediate</button>
+        <button class="lvl-btn" onclick="setLevel('senior',this)">Senior</button>
+      </div>
+    </div>
+    <div class="extra-bar" id="timetravelBar">
+      <label>Target Era</label>
+      <select class="era-sel" id="eraSelect">
+        <option value="1990s">1990s — Procedural</option>
+        <option value="2000s">2000s — Early OOP</option>
+        <option value="2010s">2010s — Modern OOP</option>
+        <option value="2020s" selected>2020s — Functional / Async</option>
+        <option value="2030s_ai">2030s — AI Optimized</option>
+      </select>
+    </div>
+    <div class="extra-bar" id="translateBar">
+      <label>Translate To</label>
+      <select class="era-sel" id="translateTarget">
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="java">Java</option>
+        <option value="typescript">TypeScript</option>
+        <option value="go">Go</option>
+        <option value="rust">Rust</option>
+        <option value="csharp">C#</option>
+        <option value="cpp">C++</option>
+        <option value="php">PHP</option>
+        <option value="ruby">Ruby</option>
+      </select>
+    </div>
+    <div class="extra-bar" id="interviewBar">
+      <label>Target Company</label>
+      <select class="era-sel" id="companySelect">
+        <option value="Google">Google</option>
+        <option value="Amazon">Amazon</option>
+        <option value="Microsoft">Microsoft</option>
+        <option value="Meta">Meta</option>
+        <option value="Apple">Apple</option>
+        <option value="Netflix">Netflix</option>
+        <option value="TCS">TCS</option>
+        <option value="Infosys">Infosys</option>
+        <option value="Wipro">Wipro</option>
+      </select>
+    </div>
+    <div class="extra-bar" id="simBar">
+      <label>Stdin Input</label>
+      <input class="extra-input" id="stdinInput" type="text" placeholder="Optional input, e.g.  5  or  hello world"/>
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="sb-item">
+        <span id="langLabel">JavaScript</span> · <span id="lineCount">0 lines</span> · <span id="charCount">0 chars</span>
+        <span id="largeBadge" style="display:none;background:var(--orange-lt);color:var(--orange);border:1px solid var(--orange-mid);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;">⚡ LARGE FILE</span>
+      </div>
+      <div class="sb-item"><span id="modeLabel">Full Analysis</span> · Groq llama-3.3-70b-versatile</div>
+    </div>
+  </div>
+
+  <!-- OUTPUT PANE -->
+  <div class="output-pane">
+    <div class="out-topbar">
+      <div class="tab-row" id="tabRow">
+        <button class="tab active" onclick="showTab('overview')" id="tab-overview">Overview</button>
+        <button class="tab" onclick="showTab('bugs')" id="tab-bugs">Bugs <span class="cnt" id="bugCnt">0</span></button>
+        <button class="tab" onclick="showTab('security')" id="tab-security">Security <span class="cnt o" id="secCnt">0</span></button>
+        <button class="tab" onclick="showTab('fix')" id="tab-fix">Fix &amp; Code</button>
+        <button class="tab" onclick="showTab('tests')" id="tab-tests">Tests</button>
+      </div>
+      <div class="out-actions">
+        <button class="btn btn-outline btn-sm" onclick="exportJSON()" id="exportBtn" style="display:none">📄 JSON</button>
+        <button class="btn btn-outline btn-sm" onclick="exportPDF()" id="pdfBtn" style="display:none">📋 PDF</button>
+        <button class="btn btn-green btn-sm" onclick="downloadFixedCode()" id="downloadBtn" style="display:none">⬇ Download Fixed</button>
+      </div>
+    </div>
+    <div class="out-scroll" id="outScroll">
+      <div class="empty-state">
+        <div class="empty-icon">🔬</div>
+        <div class="empty-title">Ready to Analyze</div>
+        <div class="empty-sub">Paste code or upload a file, choose language &amp; mode, then click <strong>Analyze</strong>.<br><br>
+          Shortcut: <strong>Ctrl + Enter</strong><br><br>
+          View past results: <strong>🕐 History</strong> &nbsp;|&nbsp; Charts: <strong>📊 Dashboard</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end workspace -->
+
+<!-- ── HISTORY OVERLAY ────────────────────────────────────── -->
+<div class="modal-overlay" id="historyOverlay" style="display:none" onclick="if(event.target===this)closeHistoryPanel()">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">🕐 Analysis History</span>
+      <button class="modal-close" onclick="closeHistoryPanel()">✕</button>
+    </div>
+    <div class="modal-body" id="historyPanel">
+      <div class="hist-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD OVERLAY ──────────────────────────────────── -->
+<div class="modal-overlay" id="dashOverlay" style="display:none" onclick="if(event.target===this)closeDashboard()">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-hd">
+      <span class="modal-title">📊 Dashboard</span>
+      <button class="modal-close" onclick="closeDashboard()">✕</button>
+    </div>
+    <div class="modal-body" id="dashContent">
+      <div class="hist-loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- JS in dependency order -->
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/helpers.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/download.js"></script>
+<script src="js/groq.js"></script>
+<script src="js/prompts.js"></script>
+<script src="js/history.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/render.js"></script>
+
+</body>
+</html>
